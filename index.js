@@ -6,6 +6,8 @@ var fs=require('fs');
 var app=express();
 var multer=require('multer');
 var uuid=require('uuid/v4');
+var validator = require('validator');
+
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -18,35 +20,38 @@ var storage = multer.diskStorage({
   var upload=multer({storage:storage});
 
 app.use(cors());
-app.use(bodyParser.json({limit: '10mb', extended: true}))
-app.use(bodyParser.urlencoded({limit: '10mb', extended: true}))
+app.use(bodyParser.json({limit: '100mb', extended: true}))
+app.use(bodyParser.urlencoded({limit: '100mb', extended: true}))
 app.use(express.static('public'));
 
 
 var connection=mysql.createConnection({
     host     : 'localhost',
-    user     : 'bekzat',
-    password : 'Kizilorda-2000',
-    database : 'subaru'
+    user     : 'root',
+    password : 'Eiss2020!',
+    database : 'energy'
 });
+
+
 
 connection.connect();
 
-app.get('/special_offers3',(req,res)=>{
-    connection.query("select * from special_offers order by id desc limit 3",(error,result)=>{
+
+app.get('/news3',(req,res)=>{
+    connection.query("select * from news order by id desc limit 3",(error,result)=>{
         res.json(result);
     });
 });
 
-app.get('/special_offers',(req,res)=>{
-    connection.query("select * from special_offers order by id desc",(error,result)=>{
+app.get('/news',(req,res)=>{
+    connection.query("select * from news order by id desc",(error,result)=>{
         res.json(result);
     });
 });
 
 
-app.get('/special_offers/:id',(req,res)=>{
-    connection.query("select * from special_offers where id=?",[req.params.id],(error,results)=>{
+app.get('/news/:id',(req,res)=>{
+    connection.query("select * from news where id=?",[req.params.id],(error,results)=>{
         if (error) {
             res.status(404);
             res.send("Not found");
@@ -55,9 +60,29 @@ app.get('/special_offers/:id',(req,res)=>{
     });
 });
 
-app.post('/special_offers',upload.single('file'),(req,res)=>{
+app.post('/news/update',upload.single('file'),(req,res)=>{
+    var insBody="";
+    var arr=[];
+    if (req.file) {
+        insBody="update news set title=?, text=?, main_photo=? where id=?";
+        arr=[req.body.title,req.body.text,req.file.filename,req.body.id];
+    }
+    else{
+        insBody="update news set title=?, text=? where id=?";
+        arr=[req.body.title,req.body.text,req.body.id];
+    }
+    connection.query(insBody,arr,(error,result)=>{
+        if (error) {
+            res.status(403);
+            res.send();
+        }
+        res.status(200);
+        res.send();
+    });
+});
+app.post('/news',upload.single('file'),(req,res)=>{
     
-     var insBody ="insert into special_offers(title,text,main_photo,date) VALUES (?,?,?,?)";
+     var insBody ="insert into news(title,text,main_photo,date) VALUES (?,?,?,?)";
      connection.query(insBody,[req.body.title,req.body.text,req.file.filename,new Date().toISOString().slice(0, 10)],(error,result)=>{
          if (error) {
                 console.log(error.message);
@@ -66,13 +91,13 @@ app.post('/special_offers',upload.single('file'),(req,res)=>{
         }
         else{
                 res.status(200);
+                console.log(new Date().toISOString().slice(0, 10));
                 res.send("Добавлено!");
             }
         });
 });
-
-app.post('/special_offers/delete',(req,res)=>{
-    connection.query("delete from special_offers where id=?",[req.body.info.id],(error,result)=>{
+app.post('/news/delete',(req,res)=>{
+    connection.query("delete from news where id=?",[req.body.info.id],(error,result)=>{
         if (error) {
             console.log(error);
         }
@@ -88,7 +113,6 @@ app.post('/special_offers/delete',(req,res)=>{
         }
     });
 });
-
 app.get('/slider',(req,res)=>{
    connection.query('select * from slider',(error,results)=>{
        if (error) {
@@ -99,9 +123,8 @@ app.get('/slider',(req,res)=>{
        }
    });
 });
-
 app.post("/slider",upload.single('file'),(req,res)=>{
-    connection.query('insert into slider(image_path,link_path) values(?,?)',[req.file.filename,req.body.link_path],(err)=>{
+    connection.query('insert into slider(image_path) values(?)',[req.file.filename],(err)=>{
         if (err) {
             console.log(err);
         }
@@ -111,7 +134,27 @@ app.post("/slider",upload.single('file'),(req,res)=>{
         }
     });
 });
-
+app.post('/slider/update',upload.single('file'),(req,res)=>{
+    var insBody="";
+    var arr=[];
+    if (req.file) {
+        insBody="update slider set image_path=? where slider_id=?";
+        arr=[req.file.filename,req.body.id];
+    }
+    else{
+        res.send("добавьте фото!")
+    }
+    connection.query(insBody,arr,(error,result)=>{
+        if (error) {
+            console.log(error);
+            
+            res.status(403);
+            res.send();
+        }
+        res.status(200);
+        res.send();
+    });
+});
 app.post("/slider/delete",(req,res)=>{
     console.log(req.body.info);
     
@@ -130,78 +173,36 @@ app.post("/slider/delete",(req,res)=>{
         }
     });
 });
-
-app.get("/test_drive",(req,res)=>{
-    connection.query("select * from test_drive  order by id desc",(error,result)=>{
-        if (error) {
-            console.log(error);
-        }
-        res.send(result);
-    });
-});
-
-app.get("/check_subaru",(req,res)=>{
-    connection.query("select * from check_subaru  order by id desc",(error,result)=>{
-        if (error) {
-            console.log(error);
-        }
-        res.send(result);
-    });
-});
-
-
 app.get("/voprsy",(req,res)=>{
-    connection.query("select * from voprsy order by id desc",(error,result)=>{
+    connection.query("select * from questions order by id desc",(error,result)=>{
         if (error) {
             console.log(error);
         }
         res.send(result);
     });
 });
-
-app.post('/test_drive',(req,res)=>{
-    connection.query("insert into test_drive(name,email,phone_number,car_model) values(?,?,?,?)",
-        [req.body.name,req.body.email,req.body.phone_number,req.body.car_model]
-        ,(error,result)=>{
-        if (error) {
-            console.log(error);
-        }
-        else{
-            res.status(200);
-            res.send("Inserted");
-        }
-    }); 
-});
-
-app.post('/test_drive/delete',(req,res)=>{
-    connection.query("delete from test_drive where id=?",[req.body.id],(error,result)=>{
-        if (error) {
-            console.log(error);
-        }
-        else{
-            res.status(200);
-            res.send("Deleted");
-        }
-    });
-});
-
-
 app.post('/voprsy',(req,res)=>{
-    connection.query("insert into voprsy(name,email,phone_number,message) values(?,?,?,?)",
+     if (validator.isEmpty(req.body.name)||!validator.isEmail(req.body.email)||validator.isEmpty(req.body.phone_number)||validator.isEmpty(req.body.message)) {
+        throw new Error("pusto!!!");
+
+        }
+    else{
+    connection.query("insert into questions(name,email,phone_number,message) values(?,?,?,?)",
         [req.body.name,req.body.email,req.body.phone_number,req.body.message]
         ,(error,result)=>{
-        if (error) {
-            console.log(error);
-        }
-        else{
-            res.status(200);
-            res.send("Inserted");
-        }
-    }); 
+            if(error){
+                console.log(error);
+            }
+            else{
+                res.status(200);
+                res.send("inserted");
+            }
+        });
+}
 });
 
 app.post('/voprsy/delete',(req,res)=>{
-    connection.query("delete from voprsy where id=?",
+    connection.query("delete from questions where id=?",
         [req.body.id]
         ,(error,result)=>{
         if (error) {
@@ -213,38 +214,46 @@ app.post('/voprsy/delete',(req,res)=>{
         }
     }); 
 });
-
-app.post('/check_subaru',(req,res)=>{
-    connection.query("insert into check_subaru(name,email,phone_number,vin) values(?,?,?,?)",
-        [req.body.name,req.body.email,req.body.phone_number,req.body.vin]
-        ,(error,result)=>{
+app.get("/files",(req,res)=>{
+    connection.query("select * from files order by file_id desc",(error,result)=>{
         if (error) {
             console.log(error);
         }
-        else{
-            res.status(200);
-            res.send("Inserted");
-        }
-    }); 
+        res.send(result);
+    });
 });
-
-app.post('/check_subaru/delete',(req,res)=>{
-    connection.query("delete from check_subaru where id=?",
-        [req.body.id]
-        ,(error,result)=>{
+app.post('/files',upload.single('file'),(req,res)=>{
+    var insBody="insert into files(file_path) values(?)";
+    connection.query(insBody,[req.file.filename],(error,result)=>{
         if (error) {
             console.log(error);
+            
+            res.status(403);
+            res.send("Error");
+        }
+        res.status(200);
+        res.send("Good");
+    });
+});
+app.post('/files/delete:file_id',(req,res)=>{
+    connection.query("delete from files where file_id=?",[req.params.file_id],(error,result)=>{
+        if (error) {
+            res.status(404);
+            res.send();
         }
         else{
-            res.status(200);
-            res.send("deleted");
+            fs.unlink('./public/'+req.body.info.filename,(err)=>{
+                if (err) {
+                    console.log(err);
+                }
+                res.status(200);
+                res.send("Successfully deleted");
+            });
         }
-    }); 
+    });
 });
 
-
-
-app.listen(5000,(err)=>{
+app.listen(5000,'localhost',(err)=>{
     if (err) {
         console.log(err);
     }
