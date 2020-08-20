@@ -317,7 +317,7 @@ app.get('/documents/download/:doc_id', (req, res) => {
     }
 })
 
-app.post('/documents', (req, res) => {
+app.put('/documents', (req, res) => {
     try {
         let prepared_query = "INSERT INTO document (document_title, document_type_id, document_file_name, document_binary) VALUES (?)";
         let query_values = [
@@ -326,7 +326,6 @@ app.post('/documents', (req, res) => {
             req.body.documentData.document_file_name,
             Buffer.from(req.body.documentData.document_binary.split("base64,")[1], "base64")
         ];
-        //console.log(query_values);
         connection.query(prepared_query, [query_values], (error, result) => {
             if (error) {
                 console.error(error);
@@ -335,6 +334,44 @@ app.post('/documents', (req, res) => {
             }
             res.status(200);
             res.send("Успешно добавлен документ.");
+        });
+    }
+    catch (Exception) {
+        console.error(Exception);
+        res.status(500).send(Exception);
+    }
+})
+
+app.post('/documents', (req, res) => {
+    try {
+        let prepared_query = "";
+        let query_values = [];
+        if (req.body.documentData.document_binary) {
+            prepared_query = "UPDATE document SET document_title = ?, document_file_name = ?, document_binary = ? WHERE id = ?";
+            query_values = [
+                req.body.documentData.document_title,
+                req.body.documentData.document_file_name,
+                Buffer.from(req.body.documentData.document_binary.split("base64,")[1], "base64"),
+                req.body.documentData.document_id
+            ]
+        }
+        else {
+            prepared_query = "UPDATE document SET document_title = ?, document_file_name = ? WHERE id = ?";
+            query_values = [
+                req.body.documentData.document_title,
+                req.body.documentData.document_file_name,
+                req.body.documentData.document_id
+            ]
+        }
+
+        connection.query(prepared_query, query_values, (error, result) => {
+            if (error) {
+                console.error(error);
+                res.status(403);
+                res.send("Ошибка при изменении документа!");
+            }
+            res.status(200);
+            res.send("Успешно изменен документ.");
         });
     }
     catch (Exception) {
