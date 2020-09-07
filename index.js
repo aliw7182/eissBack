@@ -29,10 +29,10 @@ app.use(express.static('public'));
 //dont push this!!
 var connection = mysql.createConnection({
     host: 'localhost',
-    user: 'root',
+    user: 'eiss',
     port: 3306,
     password: 'ToyotaCorolla1',
-    database: 'eissBack'
+    database: 'eiss'
 });
 
 
@@ -70,6 +70,10 @@ app.post('/news/update', upload.single('file'), (req, res) => {
         insBody = "update news set title=?, text=?, main_photo=? where id=?";
         arr = [req.body.title, req.body.text, req.file.filename, req.body.id];
     }
+    else if (req.body.videoLink) {
+        insBody = "update news set title=?, text=?, video_link=? where id=?";
+        arr = [req.body.title, req.body.text, req.body.videoLink, req.body.id];
+    }
     else {
         insBody = "update news set title=?, text=? where id=?";
         arr = [req.body.title, req.body.text, req.body.id];
@@ -83,6 +87,23 @@ app.post('/news/update', upload.single('file'), (req, res) => {
         res.send();
     });
 });
+
+app.post('/newsvideo', (req, res) => {
+    var insBody = "insert into news(title,text,video_link,date) VALUES (?,?,?,?)";
+    connection.query(insBody, [req.body.title, req.body.text, req.body.video_link, new Date().toISOString().slice(0, 10)], (error, result) => {
+        if (error) {
+            console.log(error.message);
+            res.status(401);
+            res.send("Произошла ошибка!");
+        }
+        else {
+            res.status(200);
+            console.log(new Date().toISOString().slice(0, 10));
+            res.send("Добавлено!");
+        }
+    });
+});
+//Я хуею с этого кода
 app.post('/news', upload.single('file'), (req, res) => {
 
     var insBody = "insert into news(title,text,main_photo,date) VALUES (?,?,?,?)";
