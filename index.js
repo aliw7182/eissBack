@@ -8,6 +8,7 @@ var multer = require('multer');
 var uuid = require('uuid/v4');
 var validator = require('validator');
 var path = require('path');
+const helmet = require("helmet");
 
 
 var storage = multer.diskStorage({
@@ -21,6 +22,9 @@ var storage = multer.diskStorage({
 var upload = multer({ storage: storage });
 
 app.use(cors());
+app.use(helmet({
+    frameguard: false
+}));
 app.use(bodyParser.json({ limit: '100mb', extended: true }))
 app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }))
 app.use(express.static('public'));
@@ -88,9 +92,9 @@ app.post('/news/update', upload.single('file'), (req, res) => {
     });
 });
 
-app.post('/newsvideo', (req, res) => {
-    var insBody = "insert into news(title,text,video_link,date) VALUES (?,?,?,?)";
-    connection.query(insBody, [req.body.title, req.body.text, req.body.video_link, new Date().toISOString().slice(0, 10)], (error, result) => {
+app.post('/newsvideo', upload.single('file'), (req, res) => {
+    var insBody = "insert into news(title,text,video_link,main_photo,date) VALUES (?,?,?,?, ?)";
+    connection.query(insBody, [req.body.title, req.body.text, req.body.video_link, req.file.filename, new Date().toISOString().slice(0, 10)], (error, result) => {
         if (error) {
             console.log(error.message);
             res.status(401);
