@@ -30,13 +30,11 @@ app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }))
 app.use(express.static('public'));
 
 
-//dont push this!!
 var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'eiss',
-    port: 3306,
-    password: 'ToyotaCorolla1',
-    database: 'eiss'
+    host     : 'localhost',
+    user     : 'root',
+    password : 'Eiss2020!',
+    database : 'eiss'
 });
 
 
@@ -107,7 +105,7 @@ app.post('/newsvideo', upload.single('file'), (req, res) => {
         }
     });
 });
-//Я хуею с этого кода
+
 app.post('/news', upload.single('file'), (req, res) => {
 
     var insBody = "insert into news(title,text,main_photo,date) VALUES (?,?,?,?)";
